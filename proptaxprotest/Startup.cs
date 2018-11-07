@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Piranha;
+using Piranha.AspNetCore.Identity.SQLite;
+using proptaxprotest.Models;
 
 namespace proptaxprotest
 {
@@ -21,22 +18,33 @@ namespace proptaxprotest
 
         public IConfiguration Configuration { get; }
 
+
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.Configure<CookiePolicyOptions>(options =>
+
+
+            //services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            services.AddMvc(config =>
             {
-                // This lambda determines whether user consent for non-essential cookies is needed for a given request.
-                options.CheckConsentNeeded = context => true;
-                options.MinimumSameSitePolicy = SameSiteMode.None;
+                config.ModelBinderProviders.Insert(0, new Piranha.Manager.Binders.AbstractModelBinderProvider());
             });
 
+            services.AddPiranhaApplication();
+            services.AddPiranhaFileStorage();
+            services.AddPiranhaEF(options =>
+                options.UseSqlite("Filename=./piranha.blog.db"));
+            services.AddPiranhaIdentityWithSeed<IdentitySQLiteDb>(options =>
+                options.UseSqlite("Filename=./piranha.blog.db"));
+            services.AddPiranhaManager();
+            services.AddPiranhaMemCache();
 
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+           
         }
 
+
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApi api)
         {
             if (env.IsDevelopment())
             {
@@ -50,14 +58,46 @@ namespace proptaxprotest
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
-            app.UseCookiePolicy();
+            // app.UseCookiePolicy();
 
+            // Initialize Piranha
+            App.Init();
+
+            // Configure cache level
+            App.CacheLevel = Piranha.Cache.CacheLevel.Basic;
+
+            // Build content types
+            var pageTypeBuilder = new Piranha.AttributeBuilder.PageTypeBuilder(api)
+                .AddType(typeof(BlogArchive))
+                .AddType(typeof(StandardPage));
+            pageTypeBuilder.Build()
+                .DeleteOrphans();
+            var postTypeBuilder = new Piranha.AttributeBuilder.PostTypeBuilder(api)
+                .AddType(typeof(BlogPost));
+            postTypeBuilder.Build()
+                .DeleteOrphans();
+            var siteTypeBuilder = new Piranha.AttributeBuilder.SiteTypeBuilder(api)
+                .AddType(typeof(BlogSite));
+            siteTypeBuilder.Build()
+                .DeleteOrphans();
+
+            // Register middleware
+            app.UseStaticFiles();
+            app.UseAuthentication();
+            app.UsePiranha();
+            app.UsePiranhaManager();
             app.UseMvc(routes =>
             {
+                routes.MapRoute(name: "areaRoute",
+                    template: "{area:exists}/{controller}/{action}/{id?}",
+                    defaults: new { controller = "Home", action = "Index" });
+
                 routes.MapRoute(
                     name: "default",
-                    template: "{controller=Home}/{action=Index}/{id?}");
+                    template: "{controller=home}/{action=index}/{id?}");
+
             });
+
         }
     }
 }

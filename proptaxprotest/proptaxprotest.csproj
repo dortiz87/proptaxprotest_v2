@@ -5,8 +5,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Braintree" Version="4.7.0" />
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.1.2" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="2.1.1" />
+    <PackageReference Include="piranha" Version="5.2.1" />
+    <PackageReference Include="piranha.aspnetcore" Version="5.2.1" />
+    <PackageReference Include="piranha.aspnetcore.identity" Version="5.2.1" />
+    <PackageReference Include="piranha.aspnetcore.identity.sqlite" Version="5.2.1" />
+    <PackageReference Include="piranha.aspnetcore.simplesecurity" Version="5.2.1" />
+    <PackageReference Include="piranha.attributebuilder" Version="5.2.0" />
+    <PackageReference Include="piranha.local.filestorage" Version="5.2.0" />
+    <PackageReference Include="piranha.manager" Version="5.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Code\" />
   </ItemGroup>
 
 </Project>

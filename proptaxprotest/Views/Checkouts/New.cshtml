@@ -1,0 +1,132 @@
+﻿
+
+@model proptaxprotest.Models.CheckoutCalculation
+
+<div class="wrapper">
+    <div class="checkout container">
+
+        <header>
+            <img class="img-responsive mx-auto" alt="Paladin+Logo" src="~/App_Themes/" data-holder-rendered="true">
+            <h3 class="display-4">
+                Make a Payment
+            </h3>
+        </header>
+
+     
+        <form id="payment-form" method="post" action="/checkouts">
+
+            <section>
+                <div class="form-row">
+                    <div class="form-group col-2">
+                        <label for="InvoiceAmount">Invoice Amount:</label>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <input class="calc form-control" id="invoiceamount" name="invoiceamount">
+                    </div>
+
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col-2">
+                        <label for="ConvenienceFee">Convenience Fee:</label>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <input readonly class="form-control-plaintext" id="calcoutput" name="calcoutput">
+                    </div>
+
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col-2">
+                        <label for="TotalAmount">Total Amount Due:</label>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <input readonly class="form-control-plaintext" id="amount" name="amount">
+                    </div>
+                </div>
+
+                <div class="bt-drop-in-wrapper">
+                    <div id="bt-dropin"></div>
+                </div>
+            </section>
+            <input id="nonce" name="payment_method_nonce" type="hidden" />
+            <button class="button" type="submit"><span>Test Transaction</span></button>
+        </form>
+
+
+
+    </div>
+</div>
+
+<script src="https://js.braintreegateway.com/web/dropin/1.13.0/js/dropin.min.js"></script>
+<script>
+    var client_token = "@ViewBag.ClientToken";
+    var form = document.querySelector('#payment-form');
+
+    braintree.dropin.create({
+        authorization: client_token,
+        container: '#bt-dropin',
+        paypal: {
+            flow: 'vault'
+        }
+    }, function (createErr, instance) {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            instance.requestPaymentMethod(function (err, payload) {
+                if (err) {
+                    console.log('Error', err);
+                    return;
+                }
+
+                // Add the nonce to the form and submit
+                document.querySelector('#nonce').value = payload.nonce;
+                form.submit();
+            });
+        });
+    });
+</script>
+<script src="/App_Themes/javascript/demo.js"></script>
+
+<script>
+
+    var url = '@Url.Action("Calculate","Checkouts")';
+    var url2 = '@Url.Action("CalculateTotal","Checkouts")';
+
+    $('.calc').change(function () {
+
+        // get the values of the textboxes
+        var InvAmount = $('#invoiceamount').val();
+
+        // Check they are valid
+        if (InvAmount == '' || isNaN(InvAmount)) {
+            return;
+        }
+        $.post(url, { InvoiceAmount: InvAmount }, function (response) {
+            $('#calcoutput').val(response);
+        });
+
+    });
+
+    $('.calc').focusout(function () {
+
+        // get the values of the textboxes
+        var InvAmount = $('#invoiceamount').val();
+        var ConvAmount = $('#calcoutput').val();
+
+        // Check they are valid
+        if (InvAmount == '' || ConvAmount == '' || isNaN(InvAmount) || isNaN(ConvAmount)) {
+            return;
+        }
+
+        $.post(url2, { InvoiceAmount: InvAmount, ConvenienceFee: ConvAmount }, function (response) {
+            $('#amount').val(response);      
+        });
+    
+       
+        
+
+    }); 
+</script>
+
+
